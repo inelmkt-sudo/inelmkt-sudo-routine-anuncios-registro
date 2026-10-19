@@ -113,8 +113,8 @@ time_range: {"since":"<lunes>","until":"<domingo o hoy>"}
 ### PASO 4 — Temperatura (Consolidado de leads AMG)
 La carpeta MKT CODE ya no se usa. La clasificación vive en el drive de TI (`TI_DRIVE_ID`), en un Excel por programa:
 `/INEL/Institute/Open Live/2026/Intake 3/<CÓDIGO>_<Nombre>/02_AMG/Consolidado Leads/<archivo>.xlsx`
-1. Listar `/INEL/Institute/Open Live/2026/Intake 3` con Composio `ONE_DRIVE_LIST_FOLDER_CHILDREN` (`drive_id` = TI, `folder_path`). Tomar la carpeta cuyo nombre empieza con el código, entrar a `02_AMG` y luego a `Consolidado Leads` (con `folder_item_id`), y tomar el `.xlsx` más reciente.
-2. **Acceso directo `.xlsx.url`** (pasa en PE.EI.40-26.1): descargar el `.url`, leer la línea `URL=` y resolver el archivo real con `ONE_DRIVE_GET_ITEM` por ruta o compartido. Si no se puede, ese código va a `Sin clasificar` y se anota en el resumen.
+1. Listar `/INEL/Institute/Open Live/2026/Intake 3` con Composio `ONE_DRIVE_LIST_FOLDER_CHILDREN` (`drive_id` = TI, `folder_path`). Tomar la carpeta cuyo nombre empieza con el código, entrar a `02_AMG` y luego a `Consolidado Leads` (con `folder_item_id`), y tomar el `.xlsx` más reciente (nunca un `.xlsx.url`).
+2. **Ignorar por completo los archivos `.xlsx.url`**: son accesos directos que se copiaron del original. No abrirlos, no seguirlos y no editarlos. Usar solo el `.xlsx` real de la carpeta. Si no hay ninguno, ese código va a `Sin clasificar` y se anota en el resumen.
 3. Leer las hojas CALIENTE, TIBIO y FRIO con `EXCEL_GET_WORKSHEET_USED_RANGE` (encabezado en la fila 1). Columnas por nombre: **`Correo`** y **`TIPO`**. La temperatura sale de la **columna TIPO**, no de la pestaña.
 4. Normalizar el correo (`strip().lower()`) y cruzarlo con los leads del Sheet. Sin cruce = `Sin clasificar`. Si un correo aparece repetido, usar la temperatura más caliente.
 
