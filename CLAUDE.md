@@ -16,9 +16,9 @@ La pregunta de negocio que esto responde es: *"este anuncio está caro, pero ¿t
 8. **Nunca escribir en columnas AUTO** (ANUNCIOS S:AG; GASTOS P en adelante) ni pisar un valor que alguien escribió a mano.
 9. **Una fila está libre solo si A:R (ANUNCIOS) o A:O (GASTOS) están vacías.** Las fórmulas AUTO no cuentan como ocupadas. Ubica filas por llave releyendo el rango antes de escribir; nunca uses un contador en memoria.
 10. **Anti-corrimiento**: antes de actualizar una fila existente, relee su celda llave (ANUNCIOS F{n}, GASTOS I{n}) y confirma que coincide. Al terminar, relee el bloque de la semana y valida que no haya filas fantasma (datos sin llave).
-11. **Mapear por encabezado, nunca por posición**, en PROGRAMAS, en los Sheets de leads y en los Excel de MKT CODE. El equipo inserta columnas seguido.
+11. **Mapear por encabezado, nunca por posición**, en PROGRAMAS, en los Sheets de leads y en los consolidados de AMG. El equipo inserta columnas seguido.
 12. **Leads de prueba**: ignora filas cuyo correo sea `test@meta.com` o cuyas respuestas digan `<test lead`.
-13. **Fechas**: el serial de Excel cuenta días desde 1899-12-30 (ej. 2026-10-12 = 46307). En MKT CODE, un serial con día ≤ 12 puede ser una fecha mm/dd leída como dd/mm. Para el cruce no importa, porque se cruza por correo, no por fecha.
+13. **Fechas**: el serial de Excel cuenta días desde 1899-12-30 (ej. 2026-10-12 = 46307). En los consolidados, un serial con día ≤ 12 puede ser una fecha mm/dd leída como dd/mm. Para el cruce no importa, porque se cruza por correo, no por fecha.
 
 ## Asignación de herramientas
 | Operación | Herramienta |
@@ -27,8 +27,8 @@ La pregunta de negocio que esto responde es: *"este anuncio está caro, pero ¿t
 | Leer y escribir el Excel Maestro | Composio, en `COMPOSIO_REMOTE_WORKBENCH` con `run_composio_tool`: `ONE_DRIVE_READ_WORKBOOK_RANGE` (`worksheet_id_or_name`, `address`, `select_fields:["values"]` o `["formulas"]`) y `ONE_DRIVE_UPDATE_WORKBOOK_RANGE` (`values` / `formulas`) |
 | Listar Sheets de leads | Google Drive MCP `search_files` con `parentId = '<LEADS_DRIVE_FOLDER_ID>'` |
 | Leer un Sheet de leads | Google Drive MCP `read_file_content`, o `download_file_content` con `exportMimeType=text/csv` para datos completos |
-| Listar Excel de MKT CODE | Composio `ONE_DRIVE_LIST_FOLDER_CHILDREN` con `drive_id` explícito. No usar búsqueda: el índice va atrasado. |
-| Leer un Excel de MKT CODE | Composio `EXCEL_GET_WORKSHEET_USED_RANGE` (clave `values`) |
+| Listar consolidados de leads (drive TI) | Composio `ONE_DRIVE_LIST_FOLDER_CHILDREN` con `drive_id` explícito. No usar búsqueda: el índice va atrasado. |
+| Leer un consolidado | Composio `EXCEL_GET_WORKSHEET_USED_RANGE` (clave `values`) |
 
 IDs en `.env.example`.
 
@@ -37,7 +37,7 @@ IDs en `.env.example`.
 ## Estructura de las hojas
 
 ### PROGRAMAS (solo lectura)
-Encabezados en la fila 5, datos desde la fila 6. Usar las columnas **Código** e **Intake**. El Intake activo es el valor más reciente de la columna Intake; hoy es "Intake 3". Si existe `CONFIG` "Intake activo", usar ese.
+Encabezados en la fila 5, datos desde la fila 6. Usar las columnas **Código** e **Intake**. **Por ahora se procesa solo "Intake 3"** (decisión del usuario). Para sumar otro intake hay que ampliar la ruta del PASO 4.
 
 ### ANUNCIOS (encabezados fila 5, datos 6–3005)
 | Col | Campo | Quién |
@@ -56,7 +56,7 @@ Encabezados en la fila 5, datos desde la fila 6. Usar las columnas **Código** e
 | L | Resultados Meta (leads del formulario o conversaciones de WhatsApp) | agente |
 | M | Leads (Sheet) — leads del Sheet con ese `ad_id` en la semana | agente |
 | N/O/P | Calientes / Tibios / Fríos | agente |
-| Q | Sin clasificar (leads sin cruce en MKT CODE) | agente |
+| Q | Sin clasificar (leads sin cruce en el consolidado) | agente |
 | R | Actualizado (fecha y hora de la corrida) | agente |
 | S:Y | AUTO (producto, %, CPL, costo por caliente, Cuadre, ¿Lunes?) | **no tocar** |
 | Z:AG | Veredicto acumulado | **no tocar** |
@@ -110,11 +110,13 @@ time_range: {"since":"<lunes>","until":"<domingo o hoy>"}
 3. Filtrar por `created_time` dentro de la semana (ISO con zona horaria -05:00) y descartar los leads de prueba.
 4. `ad_id` viene como `ag:123…` o `123…`: quitar el prefijo antes de cruzar con el `id` de Meta. Si no hay `ad_id`, o `is_organic=true`, el lead va a la fila `ORGÁNICO` del código.
 
-### PASO 4 — Temperatura (MKT CODE)
-1. Listar la carpeta `01XEGP2KYCIGWDO6XTTVBZDOF2IIBDMQ5S` (drive de MKT CODE) y tomar el Excel cuyo nombre contiene el código. Si hay varios, el de `lastModifiedDateTime` más reciente.
-2. Leer todas sus hojas (CALIENTE, TIBIO, FRIO). Columnas por encabezado: **correo/email** y **TIPO**. La temperatura es la de la **columna TIPO**, no la de la pestaña: hay filas en FRIO que dicen CALIENTE.
-3. Normalizar el correo (`strip().lower()`) en los dos lados y cruzar. Sin cruce = `Sin clasificar`. Si un correo aparece dos veces en MKT CODE, usar la temperatura más caliente.
-4. Si el código no tiene Excel en MKT CODE, todos sus leads van a `Sin clasificar`.
+### PASO 4 — Temperatura (Consolidado de leads AMG)
+La carpeta MKT CODE ya no se usa. La clasificación vive en el drive de TI (`TI_DRIVE_ID`), en un Excel por programa:
+`/INEL/Institute/Open Live/2026/Intake 3/<CÓDIGO>_<Nombre>/02_AMG/Consolidado Leads/<archivo>.xlsx`
+1. Listar `/INEL/Institute/Open Live/2026/Intake 3` con Composio `ONE_DRIVE_LIST_FOLDER_CHILDREN` (`drive_id` = TI, `folder_path`). Tomar la carpeta cuyo nombre empieza con el código, entrar a `02_AMG` y luego a `Consolidado Leads` (con `folder_item_id`), y tomar el `.xlsx` más reciente.
+2. **Acceso directo `.xlsx.url`** (pasa en PE.EI.40-26.1): descargar el `.url`, leer la línea `URL=` y resolver el archivo real con `ONE_DRIVE_GET_ITEM` por ruta o compartido. Si no se puede, ese código va a `Sin clasificar` y se anota en el resumen.
+3. Leer las hojas CALIENTE, TIBIO y FRIO con `EXCEL_GET_WORKSHEET_USED_RANGE` (encabezado en la fila 1). Columnas por nombre: **`Correo`** y **`TIPO`**. La temperatura sale de la **columna TIPO**, no de la pestaña.
+4. Normalizar el correo (`strip().lower()`) y cruzarlo con los leads del Sheet. Sin cruce = `Sin clasificar`. Si un correo aparece repetido, usar la temperatura más caliente.
 
 ### PASO 5 — Escribir ANUNCIOS
 Por cada anuncio de Meta con gasto en la semana, y por cada `ad_id` con leads aunque no haya tenido gasto esa semana:
@@ -145,7 +147,7 @@ Por semana y código:
 Al final:
 - lista de anuncios con veredicto **Caro y frío** y **Ganador** (leer `ANUNCIOS!AG`);
 - anuncios con `Sin código`;
-- códigos sin Sheet o sin MKT CODE;
+- códigos sin Sheet o sin consolidado;
 - cualquier error.
 
 Si no hubo gasto ni leads reales de esos códigos en la semana, no escribir nada y decirlo.

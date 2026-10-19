@@ -5,10 +5,10 @@ Registra cada semana, **por anuncio**, el gasto y los leads de Meta Ads en la ho
 Responde: **"este anuncio está caro, pero ¿trae calientes o no?"** (columna `Veredicto` de ANUNCIOS).
 
 ## Qué hace
-1. Lee los códigos de Intake activo en `PROGRAMAS`.
+1. Lee los códigos de **Intake 3** en `PROGRAMAS`.
 2. Meta Ads (solo lectura): gasto y resultados por anuncio, semana anterior y semana en curso.
 3. Google Drive: leads por `ad_id` desde el Sheet de cada código.
-4. MKT CODE: temperatura (columna TIPO) cruzada por **correo**.
+4. Consolidado de leads de AMG de cada programa (drive de TI, `Intake 3/<código>/02_AMG/Consolidado Leads`): temperatura (columna TIPO) cruzada por **correo**.
 5. Upsert en `ANUNCIOS` (Semana + ID anuncio) y en `GASTOS` (Semana + ID campaña, con fórmulas SUMIFS).
 
 ## Archivo
