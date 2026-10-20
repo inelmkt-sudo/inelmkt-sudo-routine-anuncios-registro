@@ -17,7 +17,7 @@ Responde: **"este anuncio está caro, pero ¿trae calientes o no?"** (columna `V
 
 ## Configuración del Routine (claude.ai/code/routines)
 - **Environment**: `bash setup.sh` · **Network**: Full
-- **Connectors**: Meta ADS + Composio (Excel/OneDrive activos) + Google Drive
+- **Connectors**: Meta ADS + Composio (Excel/OneDrive + Google Sheets activos) + Google Drive
 - **Trigger**: Weekly, lunes 09:00 (Lima)
 - **Prompt**:
 ```

@@ -28,6 +28,7 @@ La pregunta de negocio que esto responde es: *"este anuncio está caro, pero ¿t
 | Listar Sheets de leads | Google Drive MCP `search_files` con `parentId = '<LEADS_DRIVE_FOLDER_ID>'` |
 | Leer un Sheet de leads | Google Drive MCP `read_file_content`, o `download_file_content` con `exportMimeType=text/csv` para datos completos |
 | Listar consolidados de leads (drive TI) | Composio `ONE_DRIVE_LIST_FOLDER_CHILDREN` con `drive_id` explícito. No usar búsqueda: el índice va atrasado. |
+| Escribir `lead_status` en un Sheet | Composio Google Sheets `GOOGLESHEETS_BATCH_UPDATE` (solo esa columna) |
 | Leer un consolidado | Composio `EXCEL_GET_WORKSHEET_USED_RANGE` (clave `values`) |
 
 IDs en `.env.example`.
@@ -118,6 +119,14 @@ La carpeta MKT CODE ya no se usa. La clasificación vive en el drive de TI (`TI_
 3. Leer las hojas CALIENTE, TIBIO y FRIO con `EXCEL_GET_WORKSHEET_USED_RANGE` (encabezado en la fila 1). Columnas por nombre: **`Correo`** y **`TIPO`**. La temperatura sale de la **columna TIPO**, no de la pestaña.
 4. Normalizar el correo (`strip().lower()`) y cruzarlo con los leads del Sheet. Sin cruce = `Sin clasificar`. Si un correo aparece repetido, usar la temperatura más caliente.
 
+### PASO 4-bis — Escribir la temperatura en el Sheet (columna `lead_status`)
+Una vez cruzados los correos, cada lead del Sheet recibe su temperatura en la columna **`lead_status`**, que se ubica por encabezado:
+- Valores: `CALIENTE`, `TIBIO` o `FRIO`, según la columna TIPO del consolidado de AMG. Si el lead no cruzó, **no tocar** su `lead_status`: queda como lo dejó Meta (`CREATED`, `QUALIFIED`…).
+- Herramienta: Composio Google Sheets (`GOOGLESHEETS_BATCH_UPDATE` o `GOOGLESHEETS_VALUES_UPDATE`), con el `spreadsheet_id` del Sheet y la hoja `Hoja 1`. Escribir **solo la columna `lead_status`**, celda por celda o en bloque, con `null` o el valor actual en las filas que no cambian. Nunca modificar ninguna otra columna ni borrar filas: el Sheet lo alimenta Meta.
+- Aplicar a todos los leads del Sheet (no solo los de la semana), para mantener el estado al día. Respetar el límite de Google Sheets: 60 escrituras por minuto.
+- Para contar en ANUNCIOS (N/O/P/Q), usar la temperatura resultante de este paso. Es la misma fuente, así que el Sheet y ANUNCIOS siempre dicen lo mismo.
+- Ignorar los leads de prueba (`test@meta.com` o `<test lead`): no escribirles estado.
+
 ### PASO 5 — Escribir ANUNCIOS
 Por cada anuncio de Meta con gasto en la semana, y por cada `ad_id` con leads aunque no haya tenido gasto esa semana:
 - Armar la fila A:R, más la fila `ORGÁNICO` por código si hubo leads orgánicos.
@@ -138,6 +147,8 @@ Por cada `campaign_id` × semana presente en ANUNCIOS (excepto `ORGÁNICO`):
 3. Gasto total de ANUNCIOS por semana = gasto total de Meta para esos códigos (±0.05).
 
 ### PASO 8 — Resumen
+Incluir por código: leads del Sheet a los que se les actualizó `lead_status` (cuántos CALIENTE, TIBIO y FRIO).
+
 Por semana y código:
 - anuncios escritos;
 - gasto;
