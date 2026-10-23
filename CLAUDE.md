@@ -1,7 +1,7 @@
 # Routine: Registro semanal por anuncio → ANUNCIOS + GASTOS (Excel Maestro MKT)
 
 ## Objetivo
-Registrar, una fila por **anuncio × semana**, el gasto y los resultados de Meta Ads de los programas del Intake activo en la hoja `ANUNCIOS` del Excel Maestro, junto con los leads de cada anuncio y su temperatura (caliente / tibio / frío). `GASTOS` no recibe valores de Meta: recibe **fórmulas que suman desde ANUNCIOS** por campaña y semana. Meta es la fuente única del gasto y se escribe una sola vez.
+Registrar el corte semanal de **LEADS** (arribos, calientes, tibios, atención ≤24h y ventas, una fila por código y semana) y, una fila por **anuncio × semana**, el gasto y los resultados de Meta Ads de los programas del Intake activo en la hoja `ANUNCIOS` del Excel Maestro, junto con los leads de cada anuncio y su temperatura (caliente / tibio / frío). `GASTOS` no recibe valores de Meta: recibe **fórmulas que suman desde ANUNCIOS** por campaña y semana. Meta es la fuente única del gasto y se escribe una sola vez.
 
 La pregunta de negocio que esto responde es: *"este anuncio está caro, pero ¿trae calientes o no?"*. La responde la columna `AG Veredicto` de ANUNCIOS, que el Excel calcula solo.
 
@@ -127,6 +127,36 @@ Una vez cruzados los correos, cada lead del Sheet recibe su temperatura en la co
 - Para contar en ANUNCIOS (N/O/P/Q), usar la temperatura resultante de este paso. Es la misma fuente, así que el Sheet y ANUNCIOS siempre dicen lo mismo.
 - Ignorar los leads de prueba (`test@meta.com` o `<test lead`): no escribirles estado.
 
+### PASO 4-ter — LEADS (corte semanal por programa)
+La hoja `LEADS` del Excel Maestro (encabezados fila 5, datos desde la 6) se llena con lo que ya se leyó en los pasos anteriores más la atención comercial. **Una fila por código y semana**; llave = `Fecha corte (A)` + `Código (B)`. `A` = el **lunes** de la semana (serial de Excel). Si la fila existe, se reescribe con los acumulados actuales; si no, se usa la primera fila con A:H vacías. **Nunca tocar J:O** (son AUTO).
+
+| Col | Campo | De dónde sale |
+|---|---|---|
+| A | Fecha corte | lunes de la semana |
+| B | Código | código del programa |
+| C | Leads pagados | leads del Sheet de Drive (sin leads de prueba) de la semana con `is_organic` distinto de `true` **y** `ad_id` no vacío |
+| D | Leads orgánicos | el resto de los leads del Sheet de la semana |
+| E | Calientes (pagados) | de los pagados, los que quedaron `CALIENTE` en el PASO 4 |
+| F | Tibios (pagados) | de los pagados, los `TIBIO` |
+| G | Atendidos ≤24h | AGC (ver abajo) |
+| H | Ventas (inscritos) | AGC, hoja `VENTAS` (ver abajo) |
+| I | Nota | solo para avisos (p. ej. `AGC no disponible`); **no pisar una nota escrita a mano** |
+
+**Control de coherencia:** la suma de ANUNCIOS `M` (sin la fila ORGÁNICO) debe ser igual a LEADS `C`; ANUNCIOS `N` = LEADS `E` y `O` = `F`. Si no cuadra, anotarlo en el resumen.
+
+**Atendidos ≤24h (G)** — archivo de atención del programa en `<programa>/03_AGC/` (drive de TI):
+1. Usar solo el `.xlsx` real. **Ignorar los `.xlsx.url`** (como en el PASO 4). Hoy no tienen archivo AGC: CE.EI.06-26.2 y PE.EI.15-26.2. En ese caso **dejar G vacío** (no escribir 0) y poner `AGC no disponible` en la Nota si está vacía.
+2. Hojas `CALIENTE`, `TIBIO`, `FRIO` y `MANUAL`. **Encabezados en la fila 6, datos desde la 7** (las filas 1-5 son títulos y SLAs). Mapear por nombre: `Fecha Ingreso Lead`, `Hora`, `Estado del lead`, y `Fecha CALL 1..4`, `Hora CALL 1..4`, `Fecha WTS 1..4`, `Hora WTS 1..4`.
+3. **Leer en bloques** (≤300 filas) y solo las columnas necesarias: el archivo pesa ~2 MB y leerlo entero da error 413.
+4. Para cada lead cuya `Fecha Ingreso Lead` cae en la semana (en cualquiera de las 4 hojas): **primer contacto** = la menor fecha+hora entre CALL 1-4 y WTS 1-4 con fecha no vacía. Atendido si el primer contacto ocurrió ≤24 h después del ingreso. Si al contacto le falta la hora, comparar solo fechas (≤1 día). Si el contacto figura antes del ingreso por falta de hora, cuenta como atendido. Sin ninguna gestión = no atendido.
+5. Los leads con `Estado del lead` = `Lead Invalido` cuentan como atendidos: son bajas deliberadas, no desatención. LEADS calcula `Sin atender en SLA = Total arribos - Atendidos`.
+6. `Fecha Ingreso Lead` puede venir como texto `dd/mm/aaaa` (formato Pabbly) o como serial. Interpretar el texto como día/mes. Los seriales leerlos literales.
+7. `G` es el total de atendidos de la semana, sumando las 4 hojas.
+
+**Ventas (H)** — misma hoja AGC, pestaña `VENTAS` (encabezados fila 6, datos desde la 7): suma de `Nro de inscritos` de las filas con `Status` = `Confirmado` y `Fecha de cierre` dentro de la semana. No contar `Anulado/Cancelado` ni `Vacante reservada`. Si la pestaña no existe o está vacía, dejar H sin tocar.
+
+**Diferencias esperadas:** el AGC y el Sheet de Meta no cuadran exacto (1-2 leads). `C` y `D` salen del Sheet de Meta; `G` y `H` salen del AGC. No forzar que coincidan.
+
 ### PASO 5 — Escribir ANUNCIOS
 Por cada anuncio de Meta con gasto en la semana, y por cada `ad_id` con leads aunque no haya tenido gasto esa semana:
 - Armar la fila A:R, más la fila `ORGÁNICO` por código si hubo leads orgánicos.
@@ -147,6 +177,7 @@ Por cada `campaign_id` × semana presente en ANUNCIOS (excepto `ORGÁNICO`):
 3. Gasto total de ANUNCIOS por semana = gasto total de Meta para esos códigos (±0.05).
 
 ### PASO 8 — Resumen
+Por código, LEADS: pagados, orgánicos, calientes, tibios, atendidos ≤24h, sin atender en SLA (leer LEADS `O`) y ventas; marcar los códigos sin AGC y las diferencias de coherencia con ANUNCIOS.
 Incluir por código: leads del Sheet a los que se les actualizó `lead_status` (cuántos CALIENTE, TIBIO y FRIO).
 
 Por semana y código:

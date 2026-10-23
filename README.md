@@ -9,7 +9,8 @@ Responde: **"este anuncio está caro, pero ¿trae calientes o no?"** (columna `V
 2. Meta Ads (solo lectura): gasto y resultados por anuncio, semana anterior y semana en curso.
 3. Google Drive: leads por `ad_id` desde el Sheet de cada código.
 4. Consolidado de leads de AMG de cada programa (drive de TI, `Intake 3/<código>/02_AMG/Consolidado Leads`): temperatura (columna TIPO) cruzada por **correo**.
-5. Upsert en `ANUNCIOS` (Semana + ID anuncio) y en `GASTOS` (Semana + ID campaña, con fórmulas SUMIFS).
+5. Corte semanal en `LEADS` por código: leads pagados y orgánicos, calientes y tibios, atendidos ≤24h y ventas (desde la matriz de atención `03_AGC` de cada programa).
+6. Upsert en `ANUNCIOS` (Semana + ID anuncio) y en `GASTOS` (Semana + ID campaña, con fórmulas SUMIFS).
 
 ## Archivo
 - `EXCEL_MAESTRO_MKT_v2.xlsx` — `09. Marketing/INSTITUTE/REGISTRO` (OneDrive natalieaguirre)
