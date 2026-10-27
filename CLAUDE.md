@@ -51,8 +51,8 @@ Encabezados en la fila 5, datos desde la fila 6. Usar las columnas **Código** e
 | F | ID anuncio — texto con `'`; `ORGÁNICO` para leads orgánicos o sin anuncio (una fila por código y semana) | agente |
 | G | Nombre anuncio | agente |
 | H | Plataforma (`Facebook` / `Instagram` / `Mixto`, según el `platform` de los leads o el placement de Meta; si no se sabe, `Meta`) | agente |
-| I | Ángulo / mensaje — sale del nombre (ver nomenclatura) | agente |
-| J | Formato — sale del nombre | agente |
+| I | Ángulo / mensaje — interpretado del nombre del anuncio; editable a mano (ver "Ángulo y formato") | agente / equipo |
+| J | Formato — interpretado del nombre; editable a mano | agente / equipo |
 | K | Gasto (USD) | agente |
 | L | Resultados Meta (leads del formulario o conversaciones de WhatsApp) | agente |
 | M | Leads (Sheet) — leads del Sheet con ese `ad_id` en la semana | agente |
@@ -73,11 +73,31 @@ A Semana · B Código · C Bolsa · D Plataforma · E Funnel · F Ángulo · G F
 - **F (Ángulo), G (Formato), E (Funnel) y O (Responsable) NO se llenan.** Son manuales, para gastos que no son de Meta.
 - Las filas cuya columna D no es `Meta` son manuales: nunca tocarlas.
 
-### Nomenclatura de anuncios
-Nombre: `CÓDIGO_FUNNEL_ÁNGULO_FORMATO_vN`, por ejemplo `PE.EI.10-26.4_TOFU_AD_VID_v1`. Las tablas de códigos están en `CONFIG!AC5:AF11`: código de ángulo → ángulo (AC→AD) y código de formato → formato (AE→AF). Leerlas en cada corrida, no copiarlas aquí.
-- Separar el nombre por `_`. Si tiene 5 partes y los códigos existen en CONFIG, escribir I = ángulo y J = formato.
-- Si no cumple, escribir `Sin código` en I y J. **No adivinar** por palabras sueltas como "Video" o "Temario".
-- Si una fila previa del mismo ID anuncio tiene I/J escritos a mano (distintos de `Sin código`), copiarlos.
+### Ángulo y formato de cada anuncio (se interpretan, no se exigen)
+Los nombres de los anuncios en Meta son libres (ej. `Video documental 2`, `Temario 1 A`, `ingreso B`, `PE.EI.33-26.1 Decisiones`), así que **la rutina interpreta el nombre** y escribe en ANUNCIOS `I` (Ángulo) y `J` (Formato). Los valores salen **solo de las listas de CONFIG**: ángulos en `CONFIG!H5:H11` y formatos en `CONFIG!I5:I9`. Leerlas en cada corrida, no copiarlas aquí.
+
+**Formato (J)** — suele decirlo el propio nombre:
+- `video`, `documental`, `instructor` (video) → Video · `carrusel`, `carousel` → Carrusel · `reel` → Reel · `historia`, `story` → Historia · `post`, `placa`, `informativo`, `temario`, `frase`, `imagen`, `PR` → Imagen.
+- Si el nombre no dice nada y el anuncio tiene `creative` o tipo de media en Meta (ad creative: video vs imagen vs carrusel), usarlo. Si sigue sin saberse, `Por definir`.
+
+**Ángulo (I)** — interpretar con criterio qué mensaje comunica el nombre:
+- `docente`, `instructor`, `ponentes`, `speakers`, `experto` → Autoridad docente.
+- `temario`, `temas`, `agenda`, `aplicaciones`, `softwares`, `competencias`, `ingreso`/`ingresos` (si habla de ganar más) y todo lo que muestre qué se aprende para el trabajo → Beneficio laboral.
+- `caso`, `práctico`, `proyecto`, `simulación`, `flujo de caja`, `métricas` (ejemplo aplicado) → Caso práctico.
+- `precio`, `descuento`, `beca`, `promo`, `pago` → Precio/descuento.
+- `últimos cupos`, `cierre`, `última semana`, `inscríbete`, `urgencia` → Urgencia/cierre.
+- `testimonio`, `alumno`, `egresado`, `opinión` → Testimonio.
+- `problema`, `error`, `falla`, `riesgo`, `¿sabías?`, y nombres que plantean un dolor → Problema/solución.
+- Si el nombre es solo una letra o una palabra sin contenido (`A`, `B`, `post`, `Pieza`, `v3`), no hay de dónde interpretar: escribir `Por definir`. No inventar.
+- Si el nombre sigue la nomenclatura `CÓDIGO_FUNNEL_ÁNGULO_FORMATO_vN` (ej. `PE.EI.10-26.4_TOFU_AD_VID_v1`) y los códigos existen en `CONFIG!AC5:AF11`, usarla: manda sobre la interpretación.
+- Cuando dos ángulos encajan, elegir el más específico del mensaje principal.
+
+**Reglas de escritura (la sección es editable por el equipo):**
+- **Solo escribir en `I` y `J` si están vacías o dicen `Sin código` o `Por definir`.** Si alguien escribió o corrigió un valor a mano, **no tocarlo** nunca, aunque la rutina lo interpretaría distinto.
+- Si el mismo ID anuncio ya tiene I/J en una semana anterior, copiarlos (no reinterpretar).
+- Filas `ORGÁNICO`: escribir `—` en `I` y `J`.
+- Al terminar, en el resumen listar los anuncios con `Por definir` y los interpretados (nombre → ángulo, formato) para que el equipo los revise y corrija.
+- La hoja ANUNCIOS no está protegida: `I` y `J` se pueden escribir y corregir a mano sin restricción.
 
 ---
 
@@ -121,10 +141,13 @@ La carpeta MKT CODE ya no se usa. La clasificación vive en el drive de TI (`TI_
 
 ### PASO 4-bis — Escribir la temperatura en el Sheet (columna `lead_status`)
 Una vez cruzados los correos, cada lead del Sheet recibe su temperatura en la columna **`lead_status`**, que se ubica por encabezado:
-- Valores: `CALIENTE`, `TIBIO` o `FRIO`, según la columna TIPO del consolidado de AMG. Si el lead no cruzó, **no tocar** su `lead_status`: queda como lo dejó Meta (`CREATED`, `QUALIFIED`…).
+- Valores: **`Calificado`** si el lead es CALIENTE **o** TIBIO en la columna TIPO del consolidado de AMG, y **`FRIO`** si es FRIO. **No se escribe `CALIENTE` ni `TIBIO` en el Sheet.** Si el lead no cruzó, **no tocar** su `lead_status`: queda como lo dejó Meta (`CREATED`, `QUALIFIED`…).
+- **Columna del correo:** ubicar por encabezado entre `email`, `correo_electrónico` y `correo` (cambia según el formulario). Ubicar `lead_status` también por encabezado.
+- **Sheets sin consolidado útil** (consolidado vacío o sin esos correos): no escribir nada.
+- Un Sheet puede llamarse con el código mal escrito (ej. `PE.EI.37-36.1` para PE.EI.37-26.2): mapear por el `form_name` de sus leads o avisar en el resumen; no adivinar si hay duda.
 - Herramienta: Composio Google Sheets (`GOOGLESHEETS_BATCH_UPDATE` o `GOOGLESHEETS_VALUES_UPDATE`), con el `spreadsheet_id` del Sheet y la hoja `Hoja 1`. Escribir **solo la columna `lead_status`**, celda por celda o en bloque, con `null` o el valor actual en las filas que no cambian. Nunca modificar ninguna otra columna ni borrar filas: el Sheet lo alimenta Meta.
 - Aplicar a todos los leads del Sheet (no solo los de la semana), para mantener el estado al día. Respetar el límite de Google Sheets: 60 escrituras por minuto.
-- Para contar en ANUNCIOS (N/O/P/Q), usar la temperatura resultante de este paso. Es la misma fuente, así que el Sheet y ANUNCIOS siempre dicen lo mismo.
+- **ANUNCIOS y LEADS siguen separando caliente y tibio:** N, O y P cuentan con la columna `TIPO` del consolidado (CALIENTE / TIBIO / FRIO), no con el texto de `lead_status`. El Sheet solo muestra `Calificado` (= caliente + tibio) y `FRIO`.
 - Ignorar los leads de prueba (`test@meta.com` o `<test lead`): no escribirles estado.
 
 ### PASO 4-ter — LEADS (corte semanal por programa)
@@ -178,7 +201,7 @@ Por cada `campaign_id` × semana presente en ANUNCIOS (excepto `ORGÁNICO`):
 
 ### PASO 8 — Resumen
 Por código, LEADS: leads, calientes, tibios, atendidos ≤24h y sin atender en SLA (leer LEADS `O`); marcar los códigos sin AGC y las diferencias de coherencia con ANUNCIOS.
-Incluir por código: leads del Sheet a los que se les actualizó `lead_status` (cuántos CALIENTE, TIBIO y FRIO).
+Incluir por código: leads del Sheet a los que se les actualizó `lead_status` (cuántos Calificado y FRIO).
 
 Por semana y código:
 - anuncios escritos;
@@ -188,7 +211,7 @@ Por semana y código:
 
 Al final:
 - lista de anuncios con veredicto **Caro y frío** y **Ganador** (leer `ANUNCIOS!AG`);
-- anuncios con `Sin código`;
+- anuncios con ángulo o formato `Por definir`, y los interpretados (nombre → ángulo, formato);
 - códigos sin Sheet o sin consolidado;
 - cualquier error.
 
