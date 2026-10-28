@@ -74,7 +74,7 @@ A Semana · B Código · C Bolsa · D Plataforma · E Funnel · F Ángulo · G F
 - Las filas cuya columna D no es `Meta` son manuales: nunca tocarlas.
 
 ### Ángulo y formato de cada anuncio (se interpretan, no se exigen)
-Los nombres de los anuncios en Meta son libres (ej. `Video documental 2`, `Temario 1 A`, `ingreso B`, `PE.EI.33-26.1 Decisiones`), así que **la rutina interpreta el nombre** y escribe en ANUNCIOS `I` (Ángulo) y `J` (Formato). Los valores salen **solo de las listas de CONFIG**: ángulos en `CONFIG!H5:H11` y formatos en `CONFIG!I5:I9`. Leerlas en cada corrida, no copiarlas aquí.
+Los nombres de los anuncios en Meta son libres (ej. `Video documental 2`, `Temario 1 A`, `ingreso B`, `PE.EI.33-26.1 Decisiones`), así que **la rutina interpreta el nombre** y escribe en ANUNCIOS `I` (Ángulo) y `J` (Formato). Los valores salen **solo de las listas de CONFIG**: ángulos en `CONFIG!H5:H12` y formatos en `CONFIG!I5:I9`. Leerlas en cada corrida, no copiarlas aquí.
 
 **Formato (J)** — suele decirlo el propio nombre:
 - `video`, `documental`, `instructor` (video) → Video · `carrusel`, `carousel` → Carrusel · `reel` → Reel · `historia`, `story` → Historia · `post`, `placa`, `informativo`, `temario`, `frase`, `imagen`, `PR` → Imagen.
@@ -88,7 +88,9 @@ Los nombres de los anuncios en Meta son libres (ej. `Video documental 2`, `Temar
 - `últimos cupos`, `cierre`, `última semana`, `inscríbete`, `urgencia` → Urgencia/cierre.
 - `testimonio`, `alumno`, `egresado`, `opinión` → Testimonio.
 - `problema`, `error`, `falla`, `riesgo`, `¿sabías?`, y nombres que plantean un dolor → Problema/solución.
+- `post lanzamiento`, `lanzamiento`, `inicio`, `fecha de inicio`, `duración`, `informativo`, `comunicado` y piezas que solo informan el nombre del programa, su duración y su fecha de inicio → **Informativo**. Es un ángulo propio (`CONFIG!H12`): un anuncio que solo anuncia el programa no es urgencia ni beneficio.
 - Si el nombre es solo una letra o una palabra sin contenido (`A`, `B`, `post`, `Pieza`, `v3`), no hay de dónde interpretar: escribir `Por definir`. No inventar.
+- Un nombre que solo dice el formato (ej. `Video`) **no da ángulo**: el ángulo queda `Por definir` hasta que lo defina MKT o el nombre lo diga. Con `Post lanzamiento` sí: es `Informativo`.
 - Si el nombre sigue la nomenclatura `CÓDIGO_FUNNEL_ÁNGULO_FORMATO_vN` (ej. `PE.EI.10-26.4_TOFU_AD_VID_v1`) y los códigos existen en `CONFIG!AC5:AF11`, usarla: manda sobre la interpretación.
 - Cuando dos ángulos encajan, elegir el más específico del mensaje principal.
 
